@@ -1,0 +1,26 @@
+library(dplyr)
+library(lubridate)
+
+patient_data <- read.csv("patient_dimension.csv", stringsAsFactors = F) #these are all the cohort baseline characteristics
+View(patient_data)
+
+all_observations <- read.csv("observation_fact.csv", stringsAsFactors = F) #these are all the cohort observations, 
+        #but diagnosis were higher up in the heirarchy so instead of the variable column, need to use the concept dimension map
+        #to find match CONCEPT_CD variables to there actual meaning
+View(all_observations)
+
+disease_CD_codes <- read.csv("disease_concept_dimension.csv", stringsAsFactors = F) #the concept_dimension map not only listed
+        #disease codes but also medications and all other requested information. I identified all CD_codes that represented 
+        #an ID10 diagnosis code that included status epilepticus
+View(disease_CD_codes)
+
+patients_se <- disease_CD_codes %>%
+  left_join(all_observations, by = c("CONCEPT_CD"="CONCEPT_CD")) #This built a dataset of patients with SE from all observations
+View(patients_se)
+
+patient_se_final <- patients_se %>% 
+  filter(PATIENT_NUM !="NA") %>% #some disease CD variables coding for SE diagnosis where not used in this patient cohort retrieving some missing data with making the disease_CD_code the left table
+  group_by(PATIENT_NUM) %>% #When I run this code up to this line I retrieve 1,623 entries and the table does not seemed to be grouped by patient
+  summarize(n=n()) #when I run this code with this line I retrieve 109 entries, more likely, but no other information
+  
+View(patient_se_final)
